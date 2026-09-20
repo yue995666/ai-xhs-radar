@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ai-xhs-radar
+    runtime: python
+    buildCommand: "echo ready"
+    startCommand: "python3 server.py"
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: TIKHUB_TOKEN
+        sync: false
