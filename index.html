@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>悦来越AI · 爆款雷达</title>
+<style>
+:root{--bg:#f7f7f8;--card:#fff;--text:#17181c;--muted:#888e98;--line:#eceef2;--dark:#14161b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+button{font:inherit;cursor:pointer}.wrap{max-width:1160px;margin:auto;padding:28px 22px 60px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+h1{font-size:28px;margin:0 0 7px}.sub{font-size:14px;color:var(--muted)}.refresh{border:0;background:var(--dark);color:#fff;padding:11px 16px;border-radius:12px;font-weight:700}
+.info{display:flex;gap:9px;flex-wrap:wrap;margin:22px 0 16px}.pill{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;color:#606672}.pill b{color:#111}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 13px;font-size:13px}.chip.active{background:#111;color:#fff;border-color:#111}
+.notice{display:none;background:#fff7df;border:1px solid #f3e1a8;color:#695823;border-radius:12px;padding:11px 13px;margin-bottom:16px;font-size:13px}.notice.show{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.cover{width:100%;aspect-ratio:4/5;object-fit:cover;background:#e9ebef}.fallback{aspect-ratio:4/5;padding:18px;display:flex;align-items:flex-end;color:#fff;font-size:23px;line-height:1.18;font-weight:800;background:linear-gradient(145deg,#5468ff,#8c5cf6)}
+.body{padding:12px}.title{font-size:15px;line-height:1.45;font-weight:700;margin-bottom:8px}.meta,.stats{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}.stats{margin-top:8px;color:#5f6570}
+.bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}.score{font-size:12px;color:var(--muted)}.score b{font-size:17px;color:#111;margin-right:3px}.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px;font-size:12px;font-weight:700}.btn.primary{background:#111;color:#fff;border-color:#111}
+.loading,.empty{text-align:center;color:var(--muted);padding:56px 0}.loading{display:none}.loading.show{display:block}.empty{display:none}
+.mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:20;align-items:stretch;justify-content:flex-end}.mask.show{display:flex}.drawer{width:min(560px,96vw);height:100%;overflow:auto;background:#fff;padding:20px}.head{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:14px}.head h2{font-size:19px;margin:0 0 5px}.close{border:0;background:#f1f3f5;width:36px;height:36px;border-radius:10px}.block{margin-top:15px;border:1px solid var(--line);border-radius:14px;padding:14px}.block h3{font-size:14px;margin:0 0 9px}.block p{font-size:13px;line-height:1.75;color:#474d57}.copyrow{display:flex;gap:8px;padding:8px 0;border-top:1px dashed var(--line)}.copyrow:first-of-type{border-top:0}.copyrow span{flex:1;font-size:13px;line-height:1.55}
+textarea{width:100%;min-height:280px;border:1px solid var(--line);border-radius:12px;padding:12px;line-height:1.75;resize:vertical}
+@media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:680px){.wrap{padding:20px 14px 44px}.top{flex-direction:column}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.fallback{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>悦来越AI · 爆款雷达</h1><div class="sub">每天只看值得参考的 AI 小红书图文。</div></div>
+    <button class="refresh" id="refresh" onclick="loadRadar(true)">更新今日推荐</button>
+  </div>
+  <div class="info">
+    <div class="pill">今日精选 <b id="count">0</b> 篇</div>
+    <div class="pill">数据源 <b id="mode">载入中</b></div>
+    <div class="pill">范围 <b>近24小时 · 图文优先</b></div>
+  </div>
+  <div id="notice" class="notice"></div>
+  <div id="chips" class="chips"></div>
+  <div id="loading" class="loading">正在搜索今天的 AI 热门图文…</div>
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty">这个分类暂时没有内容。</div>
+</div>
+<div class="mask" id="mask" onclick="if(event.target.id==='mask')closeDrawer()">
+  <aside class="drawer">
+    <div class="head"><div><h2>原创仿写</h2><div class="sub" id="refTitle"></div></div><button class="close" onclick="closeDrawer()">✕</button></div>
+    <div id="drawerBody"></div>
+  </aside>
+</div>
+<script>
+const cats=["全部","GPT","Claude","Gemini","AI图片","AI办公","AI工具"];let active="全部",posts=[];
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+const fmt=n=>Number(n||0)>=10000?(Number(n)/10000).toFixed(1)+"w":Number(n||0).toLocaleString("zh-CN");
+function renderChips(){chips.innerHTML=cats.map(c=>`<button class="chip ${c===active?"active":""}" onclick="active='${c}';renderChips();render()">${c}</button>`).join("")}
+function render(){const arr=active==="全部"?posts:posts.filter(p=>p.category===active);count.textContent=arr.length;empty.style.display=arr.length?"none":"block";grid.innerHTML=arr.map(p=>`
+<article class="card">
+${p.cover?`<img class="cover" src="${esc(p.cover)}" loading="lazy" onerror="this.outerHTML='<div class=\'fallback\'>${esc(p.title)}</div>'">`:`<div class="fallback">${esc(p.title)}</div>`}
+<div class="body"><div class="title">${esc(p.title)}</div><div class="meta"><span>${esc(p.author)}</span><span>${esc(p.category)}</span></div>
+<div class="stats"><span>❤️ ${fmt(p.likes)}</span><span>⭐ ${fmt(p.collects)}</span><span>💬 ${fmt(p.comments)}</span></div>
+<div class="bottom"><div class="score"><b>${p.score||0}</b>推荐度</div><div>
+${p.url?`<button class="btn" onclick="window.open('${esc(p.url)}','_blank')">原帖</button>`:""}
+<button class="btn primary" onclick="rewrite('${esc(p.id)}')">原创仿写</button></div></div></div></article>`).join("")}
+async function loadRadar(force=false){loading.classList.add("show");notice.classList.remove("show");refresh.disabled=true;try{const r=await fetch("/api/radar"+(force?"?force=1":""));const d=await r.json();posts=d.posts||[];mode.textContent=d.mode==="live"?"TikHub 实时":"演示数据";if(d.message){notice.textContent=d.message;notice.classList.add("show")}render()}catch(e){notice.textContent="加载失败："+e.message;notice.classList.add("show")}finally{loading.classList.remove("show");refresh.disabled=false}}
+function rewrite(id){const p=posts.find(x=>String(x.id)===String(id));if(!p)return;refTitle.textContent="参考选题："+p.title;const ts=[`我最近反复在用的 ${p.category} 方法，真的很省时间`,`别只会基础用法，这个 ${p.category} 技巧更实用`,`亲测有效：把 ${p.category} 整理成了新手也能照做的步骤`];const body=`最近我在重新整理自己的 AI 使用方式。真正有用的不是知道很多工具，而是把一个功能真正用顺。\n\n这次我会参考“${p.title}”的选题方向，但重新测试、重新截图、重新组织表达。\n\n01｜先讲真实痛点\n说明以前怎么做、为什么麻烦。\n\n02｜展示具体 AI 用法\n把工具、输入方式和关键设置讲清楚。\n\n03｜放真实结果\n加入自己的前后对比或截图。\n\n04｜总结适用场景\n告诉读者什么时候值得用。\n\n核心不是复制原帖，而是借它的选题和结构，换成自己的测试、例子和表达。`;drawerBody.innerHTML=`<div class="block"><h3>为什么值得参考</h3><p>${esc(p.reason||"互动表现不错，适合参考选题和结构。")}</p></div><div class="block"><h3>可用标题</h3>${ts.map(t=>`<div class="copyrow"><span>${esc(t)}</span><button class="btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.innerText)">复制</button></div>`).join("")}</div><div class="block"><h3>正文框架</h3><textarea id="draft">${esc(body)}</textarea><div style="margin-top:9px"><button class="btn primary" onclick="navigator.clipboard.writeText(draft.value)">复制全文</button></div></div>`;mask.classList.add("show")}
+function closeDrawer(){mask.classList.remove("show")}renderChips();loadRadar(false);
+</script>
+</body>
+</html>
